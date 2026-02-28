@@ -17,7 +17,7 @@ This track is designed to take a practitioner from the foundations of Machine Le
 | **03 Deep Learning & Transformers** | CNNs, RNNs, LSTMs, & Transformer Architectures | ✅ Complete |
 | **04 Generative AI Fundamentals** | VAEs, GANs, Diffusion Models, & Fine-tuning (LoRA) | ✅ Complete |
 | **05 Advanced Prompting** | Chain-of-Thought, Reasoning, & Function Calling | ✅ Complete |
-| **06 Agentic AI Fundamentals** | Autonomous Agents, Planning, & Tool Use | ✅ Complete |
+| **06 Agentic AI Fundamentals** | Autonomous Agents, Planning, & Tool Use | 🔄 In Progress |
 | **07 Multi-Agent Systems** | Communication, Coordination, & Simulation | ⏳ Upcoming |
 | **08 RAG & Memory Systems** | Fusion, Re-ranking, & Memory Augmented Models | ⏳ Upcoming |
 | **09 Deployment & Monitoring** | Scaling, API Integration, & Cost Optimization | 🔄 In Progress |
@@ -48,8 +48,10 @@ The labs and projects are organized by module following the course progression:
   - **Function Calling**: Implementing decision engines for tickets and legal contracts.
   - **Reasoning Patterns**: Chain-of-Thought and multi-step reasoning.
 - **`M6 Agentic`**:
-  - **Core Agent Patterns**: Planning, tool usage, and autonomy.
-  - **Self-Correction**: Implementing agents that can reflect and fix their own errors.
+  - **S1–S2 Core Agent Patterns**: Orchestration, stateful agents, interactive loops, and Code-Acting (LLM-generated pandas).
+    - 📓 `Lab1_Safe_Sales_Insights_Agent.ipynb` — Decision-Driven Code-Acting Agent with policy enforcement, AST sandbox, and 6-query test suite.
+  - **S3 Self-Correction**: Implementing agents that can reflect and fix their own errors.
+  - **S4 Policy Decision Agent**: *(In Progress)*
 
 ### 🌐 Integration & Deployment
 
@@ -73,7 +75,7 @@ The labs and projects are organized by module following the course progression:
 ## 🧰 Tech Stack
 
 - **Frameworks:** `TensorFlow`, `PyTorch`, `Keras`, `JAX`
-- **Generative AI:** `Hugging Face (Transformers, Diffusers, Accelerate)`, `OpenAI API`, `Microsoft Phi-3.5`
+- **Generative AI:** `Hugging Face (Transformers, Diffusers, Accelerate)`, `OpenAI API`, `Microsoft Phi-3.5`, `BitsAndBytes (4-bit Quantization)`
 - **Deployment:** `FastAPI`, `Gradio`, `Uvicorn`, `Docker`
 - **Data & Reasoning:** `LangChain`, `NumPy`, `Pandas`, `Scikit-learn`, `Matplotlib`
 
