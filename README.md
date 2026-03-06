@@ -17,9 +17,9 @@ This track is designed to take a practitioner from the foundations of Machine Le
 | **03 Deep Learning & Transformers** | CNNs, RNNs, LSTMs, & Transformer Architectures | ✅ Complete |
 | **04 Generative AI Fundamentals** | VAEs, GANs, Diffusion Models, & Fine-tuning (LoRA) | ✅ Complete |
 | **05 Advanced Prompting** | Chain-of-Thought, Reasoning, & Function Calling | ✅ Complete |
-| **06 Agentic AI Fundamentals** | Autonomous Agents, Planning, & Tool Use | 🔄 In Progress |
-| **07 Multi-Agent Systems** | Communication, Coordination, & Simulation | ⏳ Upcoming |
-| **08 RAG & Memory Systems** | Fusion, Re-ranking, & Memory Augmented Models | ⏳ Upcoming |
+| **06 Agentic AI Fundamentals** | Autonomous Agents, Planning, & Tool Use | ✅ Complete |
+| **07 RAG & Memory Systems** | Fusion, Re-ranking, & Memory Augmented Models | 🔄 In Progress |
+| **08 Advanced RAG Systems** | Semantic Cache, GraphRAG, & Agentic RAG | ⏳ Upcoming |
 | **09 Deployment & Monitoring** | Scaling, API Integration, & Cost Optimization | 🔄 In Progress |
 | **10 Governance & Capstone** | Industry Trends & Final Project Implementation | ⏳ Upcoming |
 
@@ -51,7 +51,11 @@ The labs and projects are organized by module following the course progression:
   - **S1–S2 Core Agent Patterns**: Orchestration, stateful agents, interactive loops, and Code-Acting (LLM-generated pandas).
     - 📓 `Lab1_Safe_Sales_Insights_Agent.ipynb` — Decision-Driven Code-Acting Agent with policy enforcement, AST sandbox, and 6-query test suite.
   - **S3 Self-Correction**: Implementing agents that can reflect and fix their own errors.
-  - **S4 Policy Decision Agent**: *(In Progress)*
+    - 📓 `Lab2_Policy_Aware_Self_Correcting_Agent.ipynb` — **Advanced production-hardened agent** featuring auto-repair (5 retries), schema mapping (synonyms + fuzzy), ambiguity handling, and a full evaluation harness with 14 red-team attacks.
+    - 📄 `Lab2_Documentation.md` — Detailed technical documentation on pipeline architecture, security rules, and metrics.
+- **`M7 RAG_Retrieval Augmented Generation`**:
+  - **Part 1 — Policy Decision Agent**: Managing data access and authorization logic within retrieval contexts.
+  - **Part 2 — RAG Foundation**: Core implementation of vector-based retrieval and generation augmenting.
 
 ### 🌐 Integration & Deployment
 
@@ -67,7 +71,9 @@ The labs and projects are organized by module following the course progression:
 - **🎨 Generative Excellence:** Hands-on experience with VAEs, GANs, and Diffusion models, including LoRA fine-tuning for specialized image generation.
 - **🎯 Advanced Prompting:** Mastering Microsoft Phi-3.5 for reasoning-driven workflows, Chain-of-Thought prompting, and structured function calling.
 - **🤖 Agentic Autonomy:** Designing autonomous agents capable of independent planning, multi-step execution, and complex tool interaction.
-- **🛠️ Self-Correction & Reliability:** Implementing guardrails and reflection loops that allow agents to catch, analyze, and fix their own errors in real-time.
+- **🛡️ Security & Governance:** Implementing deterministic policy enforcement and AST-based Python sandboxes to prevent data leaks and unauthorized system access.
+- **🛠️ Self-Correction & Reliability:** Advanced reflection loops for autonomous code repair, schema mapping (synonyms/fuzzy matching) for robust natural language interaction, and comprehensive evaluation harnesses (red-teaming) for production-grade verification.
+- **🏗️ RAG Architectures:** Understanding and implementing Retrieval-Augmented Generation to ground LLMs in external knowledge with verified policies.
 - **🌐 Production Readiness:** Building scalable APIs with FastAPI and deploying models to local and cloud environments (Docker, Hugging Face).
 
 ---
@@ -77,7 +83,7 @@ The labs and projects are organized by module following the course progression:
 - **Frameworks:** `TensorFlow`, `PyTorch`, `Keras`, `JAX`
 - **Generative AI:** `Hugging Face (Transformers, Diffusers, Accelerate)`, `OpenAI API`, `Microsoft Phi-3.5`, `BitsAndBytes (4-bit Quantization)`
 - **Deployment:** `FastAPI`, `Gradio`, `Uvicorn`, `Docker`
-- **Data & Reasoning:** `LangChain`, `NumPy`, `Pandas`, `Scikit-learn`, `Matplotlib`
+- **Data & Reasoning:** `LangChain`, `NumPy`, `Pandas`, `Scikit-learn`, `Matplotlib`, `AST (Abstract Syntax Trees)`, `Difflib (Fuzzy Matching)`
 
 ---
 

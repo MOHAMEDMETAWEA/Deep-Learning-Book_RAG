@@ -1,0 +1,27 @@
+policy_id,section,policy_name,rule_id,rule_description,threshold_value,condition,approval_required,risk_level
+1,Financial,Hardware Purchase Policy,1,"Purchases up to $1500 are auto-approved",1500,"amount <= 1500","No",Medium
+1,Financial,Hardware Purchase Policy,2,"Purchases between $1501–$3000 require manager approval and 2 quotes",3000,"1500 < amount <= 3000","Manager",Medium
+1,Financial,Hardware Purchase Policy,3,"Purchases above $3000 require manager, finance, and CTO approval",3000,"amount > 3000","Manager+Finance+CTO",Medium
+1,Financial,Hardware Purchase Policy,4,"Annual hardware budget per employee is $2500",2500,"annual_budget_limit","No",Medium
+1,Financial,Hardware Purchase Policy,5,"Vendor must be selected from approved vendor list",NULL,"vendor_approved == true","No",Medium
+2,Financial,Travel Expense Policy,1,"Economy class required for flights under 6 hours",6,"flight_hours <= 6","No",Medium
+2,Financial,Travel Expense Policy,2,"Business class allowed for flights over 6 hours for executive-level employees",6,"flight_hours > 6 AND role == executive","Manager",Medium
+2,Financial,Travel Expense Policy,3,"Hotel cost must not exceed $250 regional",250,"region == regional","No",Medium
+2,Financial,Travel Expense Policy,4,"Hotel cost must not exceed $400 international major cities",400,"region == international","No",Medium
+2,Financial,Travel Expense Policy,5,"Receipts mandatory for reimbursement",NULL,"receipt_provided == true","No",Medium
+3,Security,Software Installation Policy,1,"Only software from approved registry allowed",NULL,"software_approved == true","IT",High
+3,Security,Software Installation Policy,2,"SaaS handling customer data requires security review and DPA",NULL,"handles_customer_data == true","Security+Legal",High
+3,Security,Software Installation Policy,3,"No pirated software allowed",NULL,"software_legitimate == true","IT",High
+4,Security,Data Handling Policy,1,"Restricted data must be encrypted at rest",NULL,"data_classification == restricted","Security",Critical
+4,Security,Data Handling Policy,2,"Restricted data must not be shared via email",NULL,"data_shared_email == false","Security",Critical
+4,Security,Data Handling Policy,3,"External sharing requires legal approval",NULL,"external_sharing == true","Legal",Critical
+5,Legal,Contract Termination Policy,1,"Contracts must include minimum 30-day termination notice",30,"termination_notice_days >= 30","Legal",High
+5,Legal,Contract Termination Policy,2,"Liability cap must not exceed 12 months of contract value",12,"liability_cap_months <= 12","Legal",High
+5,Legal,Contract Termination Policy,3,"Indemnification clauses must be reviewed by legal",NULL,"indemnification_clause == true","Legal",High
+6,Legal,Vendor Agreement Policy,1,"Vendor must pass compliance screening",NULL,"vendor_screened == true","Compliance",High
+6,Legal,Vendor Agreement Policy,2,"Vendors processing customer data must comply with GDPR",NULL,"processes_customer_data == true","Legal",High
+6,Legal,Vendor Agreement Policy,3,"Payment terms must not exceed Net 60 unless CFO approval",60,"payment_terms_days <= 60","CFO_if_exceeds",High
+7,HR,Conflict of Interest Policy,1,"Employees must disclose financial interest in vendors",NULL,"conflict_disclosed == true","HR",High
+7,HR,Conflict of Interest Policy,2,"Undisclosed conflict results in disciplinary action",NULL,"conflict_disclosed == false","HR",High
+8,HR,Remote Work Equipment Policy,1,"Company provides 1 laptop and 1 monitor",NULL,"equipment_request_within_policy == true","No",Medium
+8,HR,Remote Work Equipment Policy,2,"Replacement allowed every 3 years",3,"years_since_last_replacement >= 3","Manager",Medium
