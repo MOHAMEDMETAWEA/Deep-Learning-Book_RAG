@@ -45,14 +45,31 @@ def clear_and_update(sid):
         return gr.update(), f"API error: {e}"
 
 def fetch_history(sid):
-    r = requests.get(f"{API_BASE}/history/{sid}", timeout=30)
-    r.raise_for_status()
-    items = r.json().get("history", [])
-    # تحويله لنص مرتب
-    lines = []
-    for i, it in enumerate(items, 1):
-        lines.append(f"{i:02d}. [{it.get('role')}] {it.get('content')}")
-    return "\n".join(lines) if lines else "(No history)"
+    """Fetch and display history with error handling"""
+    if not sid or len(sid) > 50:
+        return "(❌ Invalid session ID)"
+    
+    try:
+        r = requests.get(f"{API_BASE}/history/{sid}", timeout=30)
+        r.raise_for_status()
+        items = r.json().get("history", [])
+        
+        if not items:
+            return "(📭 No history yet)"
+            
+        lines = []
+        for i, it in enumerate(items, 1):
+            emoji = "👤" if it.get("role") == "human" else "🤖"
+            content = it.get("content", "")[:100]
+            lines.append(f"{i:02d}. {emoji} {content}")
+        return "\n".join(lines)
+        
+    except requests.exceptions.Timeout:
+        return "(❌ Request timeout - API server not responding)"
+    except requests.exceptions.ConnectionError:
+        return f"(❌ Cannot connect: {API_BASE})"
+    except Exception as e:
+        return f"(❌ Error: {str(e)[:100]})"
 
 
 with gr.Blocks(title="Chat via FastAPI") as demo:
