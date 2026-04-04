@@ -57,10 +57,11 @@ from transformers import AutoTokenizer
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
-MAX_MODEL_TOKENS  = 256   # all-MiniLM-L6-v2 absolute limit
-MIN_CHUNK_TOKENS  = 30    # drop tiny orphan fragments
-DEFAULT_CHUNK_SIZE = 220  # comfortable margin below 256
-DEFAULT_OVERLAP    = 40
+# We allow higher limits for larger embedding models, but preserve safe defaults.
+MAX_MODEL_TOKENS  = 1024
+MIN_CHUNK_TOKENS  = 30
+DEFAULT_CHUNK_SIZE = 300
+DEFAULT_OVERLAP    = 50
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 0. CLEANING
@@ -156,17 +157,21 @@ def split_sections(text: str) -> List[Dict]:
     Returns
     -------
     list of dicts:
-        chapter : str   e.g. "chapter_2"
-        section : str   e.g. "2.6_special_kinds_of_matrices_and_vectors"
-        content : str   raw text block for this section
+        chapter     : str
+        section     : str
+        content     : str
+        char_start  : int
+        char_end    : int
     """
-    lines = text.splitlines()
-    n = len(lines)
+    # Keep line-endings in order to map text-position offsets accurately.
+    line_iter = list(re.finditer(r"(.*?)(?:\n|$)", text, flags=re.MULTILINE))
 
-    sections:   List[Dict] = []
+    sections: List[Dict] = []
     cur_chapter = "front_matter"
     cur_section = "general"
-    buffer:     List[str]  = []
+    buffer: List[str] = []
+    buffer_start: int | None = None
+    buffer_end: int | None = None
 
     # Track seen chapter headers to skip running-page repeats
     seen_chap: set = set()
@@ -174,53 +179,62 @@ def split_sections(text: str) -> List[Dict]:
     in_chapter = False
 
     def flush():
+        nonlocal buffer, buffer_start, buffer_end
         content = "\n".join(buffer).strip()
-        if content:
+        if content and buffer_start is not None and buffer_end is not None:
             sections.append({
                 "chapter": cur_chapter,
                 "section": cur_section,
                 "content": content,
+                "char_start": buffer_start,
+                "char_end": buffer_end,
             })
+        buffer = []
+        buffer_start = None
+        buffer_end = None
 
     i = 0
-    while i < n:
-        stripped = lines[i].strip()
+    while i < len(line_iter):
+        match = line_iter[i]
+        line_text = match.group(1)
+        line_start = match.start(1)
+        line_end = match.end(1)
+        stripped = line_text.strip()
 
-        # ── Chapter header (2-line) ────────────────────────────────────────
         m_chap = _CHAP_NUM_LINE.match(stripped)
-        if m_chap and i + 1 < n:
-            chap_title_raw = lines[i + 1].strip()
-            chap_key = f"CHAPTER {m_chap.group(1)}.{chap_title_raw}"
+        if m_chap and i + 1 < len(line_iter):
+            next_title = line_iter[i + 1].group(1).strip()
+            chap_key = f"CHAPTER {m_chap.group(1)}.{next_title}"
 
             if chap_key not in seen_chap:
                 seen_chap.add(chap_key)
                 flush()
-                buffer = []
                 cur_chapter = f"chapter_{m_chap.group(1)}"
                 cur_section = "intro"
-                in_chapter   = True
-                i += 2          # consume both the number line and the title line
+                in_chapter = True
+                i += 2
                 continue
             else:
-                # Running page header — skip both lines silently
                 i += 2
                 continue
 
-        # ── Section / subsection header (2-line) ──────────────────────────
         m_sec = _SEC_NUM_ALONE.match(stripped)
-        if m_sec and i + 1 < n and in_chapter:
-            title_raw = lines[i + 1].strip()
-            # Confirm the next line looks like a title (no dots, not a lone number)
+        if m_sec and i + 1 < len(line_iter) and in_chapter:
+            title_raw = line_iter[i + 1].group(1).strip()
             if title_raw and not _TOC_LINE.search(title_raw) and not _SEC_NUM_ALONE.match(title_raw):
                 flush()
-                buffer = []
-                label = re.sub(r"\s+", "_", title_raw.lower())
-                label = re.sub(r"[^\w_]", "", label)[:60]  # safe slug
-                cur_section = f"{m_sec.group(1)}_{label}"
-                i += 2          # consume section-number line + title line
+                slug = re.sub(r"\s+", "_", title_raw.lower())
+                slug = re.sub(r"[^\w_]", "", slug)[:60]
+                cur_section = f"{m_sec.group(1)}_{slug if slug else m_sec.group(1)}"
+                i += 2
                 continue
 
-        buffer.append(lines[i])
+        if stripped:
+            if buffer_start is None:
+                buffer_start = line_start
+            buffer_end = line_end
+            buffer.append(line_text)
+
         i += 1
 
     flush()
@@ -312,11 +326,20 @@ def build_chunks(
     if tokenizer is None:
         tokenizer = AutoTokenizer.from_pretrained(embed_model_name)
 
-    cleaned, _ = clean_text(raw_text)
+    cleaned, char_to_page = clean_text(raw_text)
     sections   = split_sections(cleaned)
     chunks:  List[Dict] = []
 
+    def _page_range(char_to_page_map, char_start, char_end):
+        if char_start is None or char_end is None:
+            return None, None
+        pages = [char_to_page_map[i] for i in range(char_start, char_end + 1) if i in char_to_page_map]
+        if not pages:
+            return None, None
+        return min(pages), max(pages)
+
     for sec in sections:
+        page_start, page_end = _page_range(char_to_page, sec.get("char_start"), sec.get("char_end"))
         entries = split_section_entries(sec["section"], sec["content"])
 
         for entry_id, entry in enumerate(entries):
@@ -335,6 +358,8 @@ def build_chunks(
                     "chunk_in_entry": idx,
                     "token_len":      token_len,
                     "content":        chunk,
+                    "page_start":     page_start,
+                    "page_end":       page_end,
                 })
 
     return chunks

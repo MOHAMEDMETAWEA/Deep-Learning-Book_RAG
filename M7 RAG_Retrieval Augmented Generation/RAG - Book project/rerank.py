@@ -66,3 +66,29 @@ def rerank_results(
         scored.append((section, content, cosine_sim, final))
 
     return sorted(scored, key=lambda x: x[3], reverse=True)
+
+
+def cross_encoder_rerank(
+    query: str,
+    candidates: list,
+    model_name: str = "cross-encoder/ms-marco-MiniLM-L-12-v2",
+    top_k: int = 5,
+) -> list:
+    """Re-rank candidate chunks with a cross-encoder.
+
+    candidates: list of dicts with keys section, content, maybe chapter.
+    """
+    try:
+        from sentence_transformers import CrossEncoder
+    except Exception as e:
+        raise RuntimeError("Install sentence-transformers to enable cross-encoder reranking") from e
+
+    xencoder = CrossEncoder(model_name)
+    pairs = [(query, c.get("content", "")) for c in candidates]
+    scores = xencoder.predict(pairs)
+
+    ranked = sorted(
+        zip(candidates, scores), key=lambda x: x[1], reverse=True
+    )[:top_k]
+
+    return [dict(**c, cross_score=float(score)) for c, score in ranked]

@@ -25,12 +25,14 @@ def get_create_chunks_table_sql(dim: int) -> str:
     return f"""
 CREATE TABLE IF NOT EXISTS rag_cv_chunks (
     id          SERIAL PRIMARY KEY,
-    doc_name    TEXT,
+    doc_name    TEXT NOT NULL,
     chapter     TEXT,
     section     TEXT,
-    chunk_index INT,
+    chunk_index INT NOT NULL,
     content     TEXT,
-    embedding   VECTOR({dim})
+    embedding   VECTOR({dim}),
+    content_tsv tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED,
+    UNIQUE(doc_name, chunk_index)
 );
 
 CREATE INDEX IF NOT EXISTS rag_cv_chunks_doc_idx
@@ -39,6 +41,10 @@ CREATE INDEX IF NOT EXISTS rag_cv_chunks_doc_idx
 CREATE INDEX IF NOT EXISTS rag_cv_chunks_hnsw_idx
     ON rag_cv_chunks
     USING hnsw (embedding vector_cosine_ops);
+
+CREATE INDEX IF NOT EXISTS rag_cv_chunks_content_tsv_idx
+    ON rag_cv_chunks
+    USING gin(content_tsv);
 """
 
 
@@ -48,8 +54,14 @@ CREATE INDEX IF NOT EXISTS rag_cv_chunks_hnsw_idx
 
 INSERT_CHUNK_SQL = """
 INSERT INTO rag_cv_chunks
-    (doc_name, section, chunk_index, content, embedding)
-VALUES (%s, %s, %s, %s, %s)
+    (doc_name, chapter, section, chunk_index, content, embedding)
+VALUES (%s, %s, %s, %s, %s, %s)
+ON CONFLICT (doc_name, chunk_index)
+DO UPDATE SET
+    chapter = EXCLUDED.chapter,
+    section = EXCLUDED.section,
+    content = EXCLUDED.content,
+    embedding = EXCLUDED.embedding;
 """
 
 
@@ -59,7 +71,9 @@ VALUES (%s, %s, %s, %s, %s)
 
 SEARCH_CHUNKS_SQL = """
 SELECT
+    chapter,
     section,
+    chunk_index,
     content,
     1 - (embedding <=> %s::vector)  AS cosine_sim
 FROM  rag_cv_chunks
@@ -77,7 +91,9 @@ LIMIT %s
 
 HYBRID_SEARCH_SQL = """
 SELECT
+    chapter,
     section,
+    chunk_index,
     content,
     0.7 * (1 - (embedding <=> %s::vector))
     + 0.3 * LEAST(ts_rank(to_tsvector('english', content),
@@ -100,7 +116,7 @@ COUNT_CHUNKS_SQL       = "SELECT COUNT(*) FROM rag_cv_chunks;"
 COUNT_DOC_CHUNKS_SQL   = "SELECT COUNT(*) FROM rag_cv_chunks WHERE doc_name = %s;"
 
 PREVIEW_CHUNKS_SQL = """
-SELECT doc_name, section, content
+SELECT doc_name, chapter, section, chunk_index, content
 FROM   rag_cv_chunks
 LIMIT  %s
 """

@@ -37,9 +37,29 @@ def init_db(conn_str: str, dim: int):
 
     Also add missing columns for existing older schema versions.
     """
+    SCHEMA_VERSION = 2
+
     with psycopg.connect(conn_str) as conn:
-        register_vector(conn)
         with conn.cursor() as cur:
+            # Ensure pgvector extension exists before table operations
+            cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            register_vector(conn)
+
+            # Create schema version table + ensure version row exists
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS schema_version (
+                    id SERIAL PRIMARY KEY,
+                    version INT NOT NULL,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+            """)
+            cur.execute("SELECT version FROM schema_version ORDER BY id DESC LIMIT 1;")
+            row = cur.fetchone()
+            if row is None:
+                cur.execute("INSERT INTO schema_version (version) VALUES (%s)", (SCHEMA_VERSION,))
+            elif row[0] < SCHEMA_VERSION:
+                cur.execute("UPDATE schema_version SET version = %s, updated_at = NOW()", (SCHEMA_VERSION,))
+
             # Create table if not exists (initial schema for new installs)
             cur.execute(get_create_chunks_table_sql(dim))
 
@@ -48,14 +68,18 @@ def init_db(conn_str: str, dim: int):
             cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS section TEXT;")
             cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS chunk_index INT;")
             cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS content TEXT;")
-            cur.execute(f"ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS embedding VECTOR({dim});")
+            cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS embedding VECTOR({});".format(dim))
+
+            # Set up full-text vector for hybrid search (PostgreSQL 12+)
+            cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS content_tsv tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED;")
 
             # Ensure indexes exist as well
             cur.execute("CREATE INDEX IF NOT EXISTS rag_cv_chunks_doc_idx ON rag_cv_chunks (doc_name);")
             cur.execute("CREATE INDEX IF NOT EXISTS rag_cv_chunks_hnsw_idx ON rag_cv_chunks USING hnsw (embedding vector_cosine_ops);")
+            cur.execute("CREATE INDEX IF NOT EXISTS rag_cv_chunks_content_tsv_idx ON rag_cv_chunks USING gin(content_tsv);")
 
         conn.commit()
-    print(f"✅ DB initialised — embedding dim={dim}")
+    print(f"✅ DB initialised — embedding dim={dim}, schema version={SCHEMA_VERSION}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -82,6 +106,7 @@ def upsert_chunks(conn_str: str, doc_name: str, chunks: list, vectors):
                     INSERT_CHUNK_SQL,
                     (
                         doc_name,
+                        chunk.get("chapter", ""),
                         chunk.get("section", ""),
                         i,
                         chunk.get("content", ""),

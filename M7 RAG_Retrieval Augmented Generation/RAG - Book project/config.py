@@ -29,10 +29,13 @@ PG_CONN_STR = os.getenv(
 )
 
 # ── Chunking ──────────────────────────────────────────────────────────────────
-# HARD LIMIT: all-MiniLM-L6-v2 truncates anything > 256 tokens silently.
-# Do NOT set CHUNK_SIZE above 220 for this model.
-CHUNK_SIZE    = 220
-CHUNK_OVERLAP = 40
+# Default chunking for midpoint model
+CHUNK_SIZE    = 300
+CHUNK_OVERLAP = 50
+
+# Experimental tuning for large context models (Task 3)
+CHUNK_SIZE_LARGE    = 450
+CHUNK_OVERLAP_LARGE = 90
 
 # ── Retrieval ─────────────────────────────────────────────────────────────────
 TOP_K          = 5    # final chunks sent to LLM
@@ -49,4 +52,4 @@ HF_BASE_URL  = os.getenv("HF_BASE_URL", "https://router.huggingface.co/v1")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME", "Qwen/Qwen3-Coder-Next:novita")
 
 # Legacy alias — some cells use `api_key` directly
-api_key = HF_API_KEY
+api_key = os.getenv("HF_API_KEY", "your-hf-token-here")

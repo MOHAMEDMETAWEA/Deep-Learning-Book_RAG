@@ -417,6 +417,52 @@ print(f"\n✅ Answer:\n{answer}")
 
 ---
 
+## 🧪 Full System End-to-End Test
+
+Run these commands in your project root:
+
+```bash
+# Install deps
+pip install -r requirements.txt
+
+# Initialize the DB and schema
+python -c "from db import init_db; from config import PG_CONN_STR, EMBED_DIM; init_db(PG_CONN_STR, EMBED_DIM)"
+
+# Ingest the book text with default chunking
+python -c "from rag_api import ingest_document; import json; print(ingest_document({'source_path':'Deep_Learning_Book.txt','source_type':'text','chunk_size':450,'overlap':90}))"
+
+# Run baseline query loop (local, stand-in for API) 
+python task1_run_baseline.py
+
+# Run evaluation harness
+python evaluate_rag.py
+
+# Run unit tests
+pytest -q
+```
+
+## 🌐 API test examples
+
+### 1. Ingest via endpoint:
+```bash
+curl -X POST http://localhost:8000/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"source_path":"Deep_Learning_Book.txt","source_type":"text","chunk_size":450,"overlap":90}'
+```
+
+### 2. Ask via endpoint:
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Explain stochastic gradient descent."}'
+```
+
+---
+
+## 🐛 Troubleshooting
+
+---
+
 ## 🐛 Troubleshooting
 
 ### Issue: "Connection refused to PostgreSQL"

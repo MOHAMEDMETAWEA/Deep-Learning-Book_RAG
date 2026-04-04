@@ -34,9 +34,11 @@ from config import (
     HF_BASE_URL,
     HF_MODEL_NAME,
 )
-from embeddings import load_embedder
-from retrieval import retrieve_topk
-from rerank import rerank_results
+from embeddings import load_embedder, embed_chunks
+from retrieval import retrieve_topk, hybrid_retrieve_topk
+from rerank import rerank_results, cross_encoder_rerank
+from chunking import read_pdf_text2, read_bdf_text, build_chunks
+from db import init_db, upsert_chunks
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -179,3 +181,47 @@ def ask_question(payload: AskRequest) -> dict:
         raise HTTPException(
             status_code=500, detail=f"RAG pipeline failed: {exc}"
         ) from exc
+
+
+class IngestRequest(BaseModel):
+    source_path: str
+    source_type: Optional[str] = "pdf"  # pdf|bdf|text
+    chunk_size: Optional[int] = None
+    overlap: Optional[int] = None
+    embedding_model: Optional[str] = None
+
+
+@app.post("/ingest")
+def ingest_document(payload: IngestRequest) -> dict:
+    source_path = payload.source_path
+    source_type = (payload.source_type or "pdf").lower()
+
+    if source_type == "pdf":
+        document_text = read_pdf_text2(source_path)
+    else:
+        document_text = read_bdf_text(source_path)
+
+    effective_chunk_size = payload.chunk_size or CHUNK_SIZE
+    effective_overlap = payload.overlap or CHUNK_OVERLAP
+    model_name = payload.embedding_model or EMBED_MODEL_NAME
+
+    # Build chunks from raw text
+    chunks = build_chunks(
+        document_text,
+        model_name,
+        chunk_size=effective_chunk_size,
+        overlap=effective_overlap,
+    )
+
+    # Embedding and database operations
+    init_db(PG_CONN_STR, EMBED_DIM)
+    vectors = embed_chunks(chunks, embedder)
+    upsert_chunks(PG_CONN_STR, DOC_NAME, chunks, vectors)
+
+    return {
+        "status": "ingested",
+        "doc_name": DOC_NAME,
+        "num_chunks": len(chunks),
+        "chunk_size": effective_chunk_size,
+        "overlap": effective_overlap,
+    }
