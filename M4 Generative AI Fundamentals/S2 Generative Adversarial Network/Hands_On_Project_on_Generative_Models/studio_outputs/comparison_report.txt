@@ -1,8 +1,0 @@
-Fashion Generative Studio Evaluation Report
-============================================
-VAE Latent Confidence: 0.7509
-GAN Latent Confidence: 0.8505
-
-Observations:
-- VAE produces smoother but slightly blurrier images.
-- GAN produces sharper images but can be unstable or suffer from mode collapse.
