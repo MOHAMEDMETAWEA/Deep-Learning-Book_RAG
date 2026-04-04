@@ -40,31 +40,8 @@ def hybrid_retrieve_topk(
     """
     Hybrid search: 70 % vector similarity + 30 % PostgreSQL full-text rank.
 
-    Returns list of tuples:
+    Returns list of 5-tuples:
       (chapter, section, chunk_index, content, hybrid_score)
-    """
-    with psycopg.connect(conn_str) as conn:
-        register_vector(conn)
-        with conn.cursor() as cur:
-            cur.execute(
-                HYBRID_SEARCH_SQL,
-                (query_vec, query_text, doc_name, k),
-            )
-            rows = cur.fetchall()
-    return rows
-
-
-def hybrid_retrieve_topk(
-    conn_str: str,
-    doc_name: str,
-    query_vec,
-    query_text: str,
-    k: int,
-) -> list:
-    """
-    Hybrid search: 70 % vector similarity + 30 % PostgreSQL full-text rank.
-
-    Returns list of 3-tuples: (section, content, hybrid_score)
 
     Use this for technical term queries like "SGD", "CNN", "backpropagation"
     where exact keyword presence matters alongside semantic similarity.

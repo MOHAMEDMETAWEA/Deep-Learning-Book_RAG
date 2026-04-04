@@ -11,9 +11,8 @@ from typing import List, Dict
 
 from config import PG_CONN_STR, DOC_NAME, TOP_K_RETRIEVE
 from embeddings import load_embedder
-from retrieval import retrieve_topk, hybrid_retrieve_topk
-from rerank import rerank_results, cross_encoder_rerank
-from query_expansion import expand_query
+from retrieval import retrieve_topk
+from rerank import rerank_results
 
 
 def evaluate_queries(queries: List[Dict]):

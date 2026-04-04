@@ -1,6 +1,6 @@
 # RAG Pipeline for Deep Learning Book 📚
 
-A complete **Retrieval-Augmented Generation (RAG)** system that extracts knowledge from the Deep Learning book by Ian Goodfellow, uses embeddings and vector search, and answers questions using OpenAI LLM with source citations.
+A complete **Retrieval-Augmented Generation (RAG)** system that extracts knowledge from the Deep Learning book by Ian Goodfellow, uses embeddings and vector search, and answers questions using an LLM (via HuggingFace Inference API) with source citations.
 
 ## 🎯 Project Overview
 
@@ -12,7 +12,7 @@ This project implements a production-ready RAG pipeline that:
 - **Stores embeddings** in PostgreSQL with pgvector for vector search
 - **Retrieves context** using pure vector search or hybrid (vector + keyword) search
 - **Reranks results** by combining semantic similarity (70%) + keyword overlap (30%)
-- **Generates answers** using OpenAI GPT models with source citations
+- **Generates answers** using LLMs (via OpenAI-compatible API / HuggingFace) with source citations
 - **Exposes API** via FastAPI for easy integration
 
 ### Key Features
@@ -76,8 +76,7 @@ This project implements a production-ready RAG pipeline that:
 - **Git**
 
 ### External Services
-- **OpenAI API Key** (or compatible API via HuggingFace models)
-- **HuggingFace API Key** (optional, for HF-hosted LLMs)
+- **HuggingFace API Key** — required for LLM generation (set as `HF_API_KEY`)
 
 ---
 
@@ -171,18 +170,10 @@ cp .env.example .env
 # PostgreSQL Connection
 PG_CONN_STR=postgresql://postgres:admin@localhost:5432/online_rag_deeplearningbook
 
-# OpenAI Configuration
-OPENAI_API_KEY=sk-...your-openai-key...
-
-# HuggingFace Configuration (if using HF models)
+# HuggingFace Configuration
 HF_API_KEY=hf_...your-hf-token...
-
-# LLM Model Configuration
-HF_MODEL_NAME=meta-llama/Llama-2-7b-chat
-HF_BASE_URL=https://api-inference.huggingface.co/v1
-
-# Document Configuration
-DOC_NAME=deep_learning_book
+HF_BASE_URL=https://router.huggingface.co/v1
+HF_MODEL_NAME=Qwen/Qwen3-Coder-Next:novita
 ```
 
 ### Key Configuration Parameters (`config.py`)
@@ -219,13 +210,14 @@ jupyter notebook fullsystem.ipynb
 ```python
 from config import *
 from pdf_loader import read_pdf_text
-from chunking import clean_and_chunk_text
+from chunking import build_chunks
 from embeddings import load_embedder, embed_chunks
-from db import upsert_chunks
+from db import init_db, upsert_chunks
 
 # 1. Load and chunk
 text = read_pdf_text("Deep+Learning+Ian+Goodfellow.pdf")
-chunks = clean_and_chunk_text(text)
+chunks = build_chunks(text, EMBED_MODEL_NAME,
+                      chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP)
 
 # 2. Initialize database
 init_db(PG_CONN_STR, EMBED_DIM)
@@ -235,7 +227,7 @@ embedder = load_embedder(EMBED_MODEL_NAME)
 embeddings = embed_chunks(chunks, embedder)
 
 # 4. Ingest
-upsert_chunks(PG_CONN_STR, chunks, embeddings, DOC_NAME)
+upsert_chunks(PG_CONN_STR, DOC_NAME, chunks, embeddings)
 
 # 5. Ask
 question = "What is backpropagation?"
@@ -276,11 +268,15 @@ response = requests.post(
     json={"question": "Explain backpropagation in simple terms"}
 )
 
-print(response.json())
+data = response.json()
+print(data["Generated Answer"])
+print(data["Top Retrieved Chunks"])
 # {
-#   "answer": "Backpropagation is ...",
-#   "source": "Chapter 6 - Gradient-Based Optimization",
-#   "confidence": 0.95
+#   "Generated Answer": "Backpropagation is ...",
+#   "Top Retrieved Chunks": [
+#     { "section": "6.5_back_propagation", "content": "...",
+#       "vector_similarity": 0.85, "final_score": 0.89 }
+#   ]
 # }
 ```
 
@@ -302,12 +298,15 @@ Ask the RAG system a question about the Deep Learning book.
 **Response:**
 ```json
 {
-  "answer": "The main components of a neural network are: 1) Input layer — receives data; 2) Hidden layers — perform computations; 3) Output layer — produces predictions; 4) Activation functions — introduce non-linearity.",
-  "source": "Chapter 1 - Introduction",
-  "confidence": 0.89,
-  "retrieval_count": 20,
-  "reranked_count": 5,
-  "response_time_ms": 1243
+  "Generated Answer": "The main components of a neural network are: ...",
+  "Top Retrieved Chunks": [
+    {
+      "section": "6.1_example_feedforward_network",
+      "content": "A feedforward neural network ...",
+      "vector_similarity": 0.87,
+      "final_score": 0.91
+    }
+  ]
 }
 ```
 
@@ -315,7 +314,8 @@ Ask the RAG system a question about the Deep Learning book.
 | Code | Meaning |
 |------|---------|
 | 200 | Success |
-| 400 | Invalid question format |
+| 400 | Empty question |
+| 401 | HuggingFace authentication failed |
 | 500 | Server error (missing API key, DB connection failed) |
 
 ---
@@ -327,25 +327,31 @@ RAG - Book project/
 ├── README.md                      ← This file
 ├── requirements.txt               ← Python dependencies
 ├── .env.example                   ← Example environment config
+├── .gitignore                     ← Git ignore rules
 │
 ├── Deep+Learning+Ian+Goodfellow.pdf  ← Input PDF
 ├── Deep_Learning_Book.txt         ← Extracted text (reference)
 │
 ├── config.py                      ← Central configuration hub
-├── pdf_loader.py                  ← PDF extraction (PyMuPDF)
+├── pdf_loader.py                  ← PDF extraction (PyMuPDF + pypdf fallback)
 ├── chunking.py                    ← Smart text chunking + cleaning
 ├── embeddings.py                  ← SentenceTransformer helpers
 ├── db.py                          ← PostgreSQL + pgvector operations
 ├── sql_queries.py                 ← SQL constants
 ├── retrieval.py                   ← Vector & hybrid search
 ├── rerank.py                      ← Post-retrieval reranking
-├── rag_api.py                     ← FastAPI server
+├── query_expansion.py             ← Query synonym expansion
+├── rag_api.py                     ← FastAPI server (/ask + /ingest)
+├── evaluate_rag.py                ← Evaluation harness (10-query benchmark)
+├── task1_run_baseline.py          ← Baseline retrieval script
 │
 ├── fullsystem.ipynb               ← Full pipeline notebook (end-to-end)
 ├── fullsystem_1.ipynb             ← Alternative implementation
 ├── demo.ipynb                     ← Short demo notebook
 ├── task.ipynb                     ← Task-specific notebook
 │
+├── tests/
+│   └── test_rag.py                ← Unit tests (pytest)
 ├── tmp_debug_schema.py            ← Debug script (optional)
 └── system.png                     ← Architecture diagram
 ```
@@ -355,13 +361,16 @@ RAG - Book project/
 ## 🔄 Complete Workflow Example
 
 ```python
+import numpy as np
+from openai import OpenAI
+
 # 1. Load configuration
 from config import *
 from pdf_loader import read_pdf_text
-from chunking import clean_and_chunk_text
+from chunking import build_chunks
 from embeddings import load_embedder, embed_chunks
 from db import init_db, upsert_chunks, preview_chunks
-from retrieval import retrieve_topk, hybrid_retrieve_topk
+from retrieval import retrieve_topk
 from rerank import rerank_results
 from rag_api import generate_text
 
@@ -370,7 +379,8 @@ print("📚 Loading PDF...")
 text = read_pdf_text("Deep+Learning+Ian+Goodfellow.pdf")
 
 print("✂️  Chunking text...")
-chunks = clean_and_chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP)
+chunks = build_chunks(text, EMBED_MODEL_NAME,
+                      chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP)
 print(f"   → {len(chunks)} chunks created")
 
 print("🗄️  Initializing database...")
@@ -383,24 +393,24 @@ print("📊 Creating embeddings...")
 embeddings = embed_chunks(chunks, embedder)
 
 print("💾 Ingesting into pgvector...")
-upsert_chunks(PG_CONN_STR, chunks, embeddings, DOC_NAME)
+upsert_chunks(PG_CONN_STR, DOC_NAME, chunks, embeddings)
 print(f"   → Stored {len(chunks)} chunk embeddings")
 
 # 3. Ask a question
 question = "What is the purpose of regularization?"
-
 print(f"\n❓ Question: {question}")
 
 # Embed query
-query_embedding = embed_chunks([question], embedder)[0]
+qvec = embedder.encode([question], normalize_embeddings=True)[0]
+qvec = np.asarray(qvec, dtype=np.float32)
 
 # Retrieve top-20
-raw_results = retrieve_topk(PG_CONN_STR, DOC_NAME, query_embedding, TOP_K_RETRIEVE)
+raw_results = retrieve_topk(PG_CONN_STR, DOC_NAME, qvec, TOP_K_RETRIEVE)
 print(f"   📤 Retrieved {len(raw_results)} candidates")
 
 # Rerank to top-5
-reranked = rerank_results(question, raw_results, vec_weight=0.7, kw_weight=0.3)
-print(f"   ⭐ Reranked to top {len(reranked)}")
+reranked = rerank_results(question, raw_results)
+print(f"   ⭐ Reranked to top {min(TOP_K, len(reranked))}")
 
 # Build context for LLM
 context = "\n---\n".join([
@@ -409,9 +419,8 @@ context = "\n---\n".join([
 ])
 
 # Generate answer
-client = OpenAI(api_key=...)
+client = OpenAI(base_url=HF_BASE_URL, api_key=HF_API_KEY)
 answer = generate_text(client, context, question)
-
 print(f"\n✅ Answer:\n{answer}")
 ```
 
@@ -456,10 +465,6 @@ curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
   -d '{"question":"Explain stochastic gradient descent."}'
 ```
-
----
-
-## 🐛 Troubleshooting
 
 ---
 
@@ -514,15 +519,15 @@ print(chunks)
 # Should show your DOC_NAME in output
 ```
 
-### Issue: "OPENAI_API_KEY not set"
+### Issue: "HF API key missing or invalid"
 
 **Solution:**
 ```bash
 # Add to .env
-echo "OPENAI_API_KEY=sk-..." >> .env
+echo "HF_API_KEY=hf_..." >> .env
 
-# Or set environment variable
-export OPENAI_API_KEY=sk-...
+# Or set environment variable directly
+export HF_API_KEY=hf_...
 ```
 
 ### Issue: "Slow retrieval (>5 seconds)"
@@ -531,6 +536,7 @@ export OPENAI_API_KEY=sk-...
 Ensure pgvector indexes are created:
 ```python
 from db import init_db
+from config import PG_CONN_STR, EMBED_DIM
 init_db(PG_CONN_STR, EMBED_DIM)
 # This creates HNSW indexes automatically
 ```
@@ -575,7 +581,7 @@ init_db(PG_CONN_STR, EMBED_DIM)
 2. **Use environment variables in production:**
    ```python
    import os
-   api_key = os.getenv("OPENAI_API_KEY")
+   api_key = os.getenv("HF_API_KEY")
    ```
 
 3. **Rotate API keys regularly** — Especially if exposed
@@ -626,14 +632,25 @@ MIT License — Free to use, modify, distribute.
 
 ## 📅 Changelog
 
-### v1.0 (Current)
+### v2.0 (Current)
+- ✅ Fixed reranking tuple index mismatch (was producing wrong scores)
+- ✅ Fixed import errors in `rag_api.py` (startup crash)
+- ✅ Fixed `preview_chunks` column unpacking (runtime crash)
+- ✅ Removed duplicate `hybrid_retrieve_topk` function
+- ✅ Added `load_dotenv()` — `.env` files now actually loaded
+- ✅ Set `CHUNK_SIZE=220` / `MAX_MODEL_TOKENS=256` for safe embedding
+- ✅ Python 3.9 compatibility (`Optional[int]` instead of `int | None`)
+- ✅ Cleaned unused imports across modules
+- ✅ Created `.env.example` template
+- ✅ README corrected to match actual API and function signatures
+
+### v1.0
 - ✅ Smart chunking with section detection
 - ✅ Page tracking for citations
 - ✅ Hybrid (vector + keyword) search
 - ✅ Two-stage retrieval + reranking
 - ✅ FastAPI server with `/ask` endpoint
 - ✅ Full Jupyter notebooks included
-- ✅ Comprehensive documentation
 
 ---
 

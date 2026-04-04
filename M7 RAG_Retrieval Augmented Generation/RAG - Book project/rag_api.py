@@ -16,8 +16,8 @@ CHANGES vs. original
 ⑥ Type annotations updated for Python 3.9+ compatibility (no X | Y union).
 """
 
-import os
-from typing import Any, Optional
+
+from typing import Optional
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
@@ -26,7 +26,10 @@ from pydantic import BaseModel, Field
 
 from config import (
     EMBED_MODEL_NAME,
+    EMBED_DIM,
     PG_CONN_STR,
+    CHUNK_SIZE,
+    CHUNK_OVERLAP,
     TOP_K,
     TOP_K_RETRIEVE,
     DOC_NAME,
@@ -35,9 +38,10 @@ from config import (
     HF_MODEL_NAME,
 )
 from embeddings import load_embedder, embed_chunks
-from retrieval import retrieve_topk, hybrid_retrieve_topk
-from rerank import rerank_results, cross_encoder_rerank
-from chunking import read_pdf_text2, read_bdf_text, build_chunks
+from retrieval import retrieve_topk
+from rerank import rerank_results
+from pdf_loader import read_pdf_text2, read_bdf_text
+from chunking import build_chunks
 from db import init_db, upsert_chunks
 
 

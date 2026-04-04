@@ -44,8 +44,8 @@ def rerank_results(
     Parameters
     ----------
     question   : str         The user's question string.
-    results    : list of 3-tuples  (section, content, cosine_sim)
-                 as returned by retrieve_topk.
+    results    : list of 5-tuples  (chapter, section, chunk_index, content, cosine_sim)
+                 as returned by retrieve_topk / SEARCH_CHUNKS_SQL.
     vec_weight : float       Weight applied to cosine similarity (default 0.7).
     kw_weight  : float       Weight applied to keyword overlap   (default 0.3).
 
@@ -56,9 +56,10 @@ def rerank_results(
     """
     scored = []
     for row in results:
-        section    = row[0] if len(row) > 0 else ""
-        content    = row[1] if len(row) > 1 else ""
-        cosine_sim = float(row[2]) if len(row) > 2 and row[2] is not None else 0.0
+        # SEARCH_CHUNKS_SQL returns: (chapter, section, chunk_index, content, cosine_sim)
+        section    = row[1] if len(row) > 1 else ""
+        content    = row[3] if len(row) > 3 else ""
+        cosine_sim = float(row[4]) if len(row) > 4 and row[4] is not None else 0.0
 
         kw_score   = _keyword_score(question, content)
         final      = vec_weight * cosine_sim + kw_weight * kw_score

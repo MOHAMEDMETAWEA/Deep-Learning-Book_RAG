@@ -165,8 +165,10 @@ def preview_chunks(conn_str: str, limit: int = 5):
             rows = cur.fetchall()
 
     print("\n🔎 Stored Chunks Preview\n")
-    for doc, sec, content in rows:
+    for doc, chapter, sec, chunk_idx, content in rows:
         print(f"DOC:     {doc}")
+        print(f"CHAPTER: {chapter}")
         print(f"SECTION: {sec}")
-        print(content[:200])
+        print(f"CHUNK:   {chunk_idx}")
+        print((content or "")[:200])
         print("-" * 40)

@@ -18,6 +18,12 @@ CHANGES vs. original
 
 import os
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv is optional; env vars can be set directly
+
 # ── Embedding model ───────────────────────────────────────────────────────────
 EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 EMBED_DIM        = 384   # dimension of all-MiniLM-L6-v2
@@ -30,8 +36,8 @@ PG_CONN_STR = os.getenv(
 
 # ── Chunking ──────────────────────────────────────────────────────────────────
 # Default chunking for midpoint model
-CHUNK_SIZE    = 300
-CHUNK_OVERLAP = 50
+CHUNK_SIZE    = 220   # safe ceiling for all-MiniLM-L6-v2 (256 token hard limit)
+CHUNK_OVERLAP = 40
 
 # Experimental tuning for large context models (Task 3)
 CHUNK_SIZE_LARGE    = 450

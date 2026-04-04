@@ -50,7 +50,7 @@ CHANGES vs. original
 from __future__ import annotations
 
 import re
-from typing import List, Dict, Tuple
+from typing import List, Dict, Optional, Tuple
 from transformers import AutoTokenizer
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ from transformers import AutoTokenizer
 # ─────────────────────────────────────────────────────────────────────────────
 
 # We allow higher limits for larger embedding models, but preserve safe defaults.
-MAX_MODEL_TOKENS  = 1024
+MAX_MODEL_TOKENS  = 256   # all-MiniLM-L6-v2 hard limit
 MIN_CHUNK_TOKENS  = 30
 DEFAULT_CHUNK_SIZE = 300
 DEFAULT_OVERLAP    = 50
@@ -170,8 +170,8 @@ def split_sections(text: str) -> List[Dict]:
     cur_chapter = "front_matter"
     cur_section = "general"
     buffer: List[str] = []
-    buffer_start: int | None = None
-    buffer_end: int | None = None
+    buffer_start: Optional[int] = None
+    buffer_end: Optional[int] = None
 
     # Track seen chapter headers to skip running-page repeats
     seen_chap: set = set()
@@ -364,11 +364,3 @@ def build_chunks(
 
     return chunks
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 5. UPSERT TO DATABASE
-# ─────────────────────────────────────────────────────────────────────────────
-
-def upsert_chunks(conn_str, doc_name, chunks, vectors):
-    from db import upsert_chunks as db_upsert_chunks
-    return db_upsert_chunks(conn_str, doc_name, chunks, vectors)
