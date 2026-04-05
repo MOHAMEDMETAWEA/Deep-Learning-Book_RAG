@@ -147,6 +147,12 @@ app.add_middleware(
 
 embedder = load_embedder(EMBED_MODEL_NAME)
 
+# ── Ensure DB Schema is correct on startup ───────────────────────────────────
+try:
+    init_db(PG_CONN_STR, EMBED_DIM)
+except Exception as _e:
+    print(f"⚠️  Database initialization failed: {_e}")
+
 
 @app.get("/health")
 def health() -> dict:

@@ -1,0 +1,92 @@
+[
+  {
+    "question": "What is stochastic gradient descent?",
+    "expected": "stochastic gradient descent",
+    "retrieval_accuracy": 1.0,
+    "citation_correctness": 1.0,
+    "answer_faithfulness": 1.0,
+    "top_chunk": "the size of a minibatch. optimization algorithms that use only a single example at a time are sometimes called stochastic or sometimes online methods. the term online is usually reserved for the case where the examples are drawn from a stream of cont",
+    "top_score": 0.721051824092865
+  },
+  {
+    "question": "Define convolutional neural network",
+    "expected": "convolutional neural network",
+    "retrieval_accuracy": 1.0,
+    "citation_correctness": 1.0,
+    "answer_faithfulness": 1.0,
+    "top_chunk": "grid - like topology. examples include time - series data, which can be thought of as a 1d grid taking samples at regular time intervals, and image data, which can be thought of as a 2d grid of pixels. convolutional networks have been tremendously su",
+    "top_score": 0.6840365409851074
+  },
+  {
+    "question": "How does batch normalization work?",
+    "expected": "batch normalization",
+    "retrieval_accuracy": 1.0,
+    "citation_correctness": 1.0,
+    "answer_faithfulness": 1.0,
+    "top_chunk": "batch normalization (, ) is one of the most exciting recent and szegedy 2015 innovations in optimizing deep neural networks and it is actually not an optimization algorithm at all. instead, it is a method of adaptive reparametrization, motivated by t",
+    "top_score": 0.8263123524822569
+  },
+  {
+    "question": "Explain vanishing gradient problem",
+    "expected": "vanishing gradient",
+    "retrieval_accuracy": 1.0,
+    "citation_correctness": 1.0,
+    "answer_faithfulness": 1.0,
+    "top_chunk": ". 11 ) any eigenvalues λi that are not near an absolute value of will either explode if they are greater than in magnitude or vanish if they are less than in magnitude. the vanishing and exploding gradient problem refers to the fact that gradients th",
+    "top_score": 0.5349989917874649
+  },
+  {
+    "question": "What is the role of the loss function?",
+    "expected": "loss function",
+    "retrieval_accuracy": 1.0,
+    "citation_correctness": 1.0,
+    "answer_faithfulness": 1.0,
+    "top_chunk": "loss function actually results in being able to learn more. for example, the test set 0 - 1 loss often continues to decrease for a long time after the training set 0 - 1 loss has reached zero, when training using the log - likelihood surrogate. this ",
+    "top_score": 0.5771952320816981
+  },
+  {
+    "question": "How does dropout regularization help?",
+    "expected": "dropout",
+    "retrieval_accuracy": 1.0,
+    "citation_correctness": 1.0,
+    "answer_faithfulness": 1.0,
+    "top_chunk": "choice of inference approximation is problem - dependent. srivastava et al. ( ) showed that dropout is more than other standard computationally inexpensive regularizers, such as weight decay, ﬁlter norm constraints and sparse activity regularization.",
+    "top_score": 0.7092277509434379
+  },
+  {
+    "question": "Define overfitting in deep learning",
+    "expected": "overfitting",
+    "retrieval_accuracy": 0.0,
+    "citation_correctness": 1.0,
+    "answer_faithfulness": 0.0,
+    "top_chunk": "be quite to determine the capacity of deep learning algorithms. the problem of determining the capacity of a deep learning model is especially because the capacity is limited by the capabilities of the optimization algorithm, and we have little theor",
+    "top_score": 0.5172044534195772
+  },
+  {
+    "question": "What is the Adam optimizer?",
+    "expected": "Adam",
+    "retrieval_accuracy": 1.0,
+    "citation_correctness": 1.0,
+    "answer_faithfulness": 1.0,
+    "top_chunk": "adam (, ) is yet another adaptive learning rate optimization kingma and ba 2014 algorithm and is presented in algorithm. the name “ adam ” derives from",
+    "top_score": 0.6329259942218077
+  },
+  {
+    "question": "Explain backpropagation",
+    "expected": "backpropagation",
+    "retrieval_accuracy": 0.0,
+    "citation_correctness": 1.0,
+    "answer_faithfulness": 0.0,
+    "top_chunk": "rithms when we use a feedforward neural network to accept an input x and produce an output, information ﬂows forward through the network. the inputs x provide the initial information that then propagates up to the hidden units at each layer and ﬁnall",
+    "top_score": 0.49331052303314554
+  },
+  {
+    "question": "What are activation functions?",
+    "expected": "activation function",
+    "retrieval_accuracy": 1.0,
+    "citation_correctness": 1.0,
+    "answer_faithfulness": 1.0,
+    "top_chunk": "##al activation functions are more common in settings other than feed - forward networks. recurrent networks, many probabilistic models, and some autoencoders have additional requirements that rule out the use of piecewise linear activation functions",
+    "top_score": 0.5869248591706246
+  }
+]

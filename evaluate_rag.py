@@ -28,13 +28,15 @@ def evaluate_queries(queries: List[Dict]):
         reranked = rerank_results(question, raw)
 
         top = reranked[0] if reranked else None
-        top_content = top[1] if top else ""
-        top_score = top[3] if top else 0.0
+        top_content = top[3] if top else ""   # content is at index 3
+        top_score =   top[5] if top else 0.0  # final_score is at index 5
 
         retrieval_accuracy = 1.0 if expected.lower() in top_content.lower() else 0.0
         citation_correctness = 1.0 if top and top[0] else 0.0
 
-        answer_faithfulness = 1.0 if expected.lower().split()[0] in top_content.lower() else 0.0
+        # proxy for faithfulness: does the chunk contain the core keyword?
+        low_expected = expected.lower().split()[0]
+        answer_faithfulness = 1.0 if low_expected in top_content.lower() else 0.0
 
         results.append({
             'question': question,
@@ -51,27 +53,34 @@ def evaluate_queries(queries: List[Dict]):
 
 if __name__ == '__main__':
     test_queries = [
-        { 'question': 'What is stochastic gradient descent?', 'expected': 'stochastic gradient descent' },
-        { 'question': 'Define convolutional neural network', 'expected': 'convolutional neural network' },
-        { 'question': 'How does batch normalization work?', 'expected': 'batch normalization' },
-        { 'question': 'Explain vanishing gradient problem', 'expected': 'vanishing gradient' },
-        { 'question': 'What is the role of the loss function?', 'expected': 'loss function' },
-        { 'question': 'How does dropout regularization help?', 'expected': 'dropout' },
-        { 'question': 'Define overfitting in deep learning', 'expected': 'overfitting' },
-        { 'question': 'What is the Adam optimizer?', 'expected': 'Adam' },
-        { 'question': 'Explain backpropagation', 'expected': 'backpropagation' },
-        { 'question': 'What are activation functions?', 'expected': 'activation function' },
+        {"question": "What is stochastic gradient descent?", "expected": "stochastic gradient descent"},
+        {"question": "Define convolutional neural network", "expected": "convolutional neural network"},
+        {"question": "How does batch normalization work?", "expected": "batch normalization"},
+        {"question": "Explain vanishing gradient problem", "expected": "vanishing gradient"},
+        {"question": "What is the role of the loss function?", "expected": "loss function"},
+        {"question": "How does dropout regularization help?", "expected": "dropout"},
+        {"question": "Define overfitting in deep learning", "expected": "overfitting"},
+        {"question": "What is the Adam optimizer?", "expected": "Adam"},
+        {"question": "Explain backpropagation", "expected": "backpropagation"},
+        {"question": "What are activation functions?", "expected": "activation function"},
     ]
 
     output = evaluate_queries(test_queries)
+    
+    import json
+    with open('evaluation_results.json', 'w', encoding='utf-8') as f:
+        json.dump(output, f, indent=2, ensure_ascii=False)
+
     for r in output:
-        print(r)
+        print(f"Q: {r['question']}")
+        print(f"  Acc: {r['retrieval_accuracy']} | Cit: {r['citation_correctness']} | Faith: {r['answer_faithfulness']}")
+        print("-" * 20)
 
     avg_retrieval = sum(r['retrieval_accuracy'] for r in output) / len(output)
     avg_citation = sum(r['citation_correctness'] for r in output) / len(output)
     avg_faithfulness = sum(r['answer_faithfulness'] for r in output) / len(output)
 
-    print('---')
+    print('\n--- SUMMARY ---')
     print(f'Avg retrieval accuracy: {avg_retrieval:.2f}')
     print(f'Avg citation correctness: {avg_citation:.2f}')
     print(f'Avg answer faithfulness (proxy): {avg_faithfulness:.2f}')
