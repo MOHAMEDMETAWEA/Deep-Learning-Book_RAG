@@ -1,0 +1,10 @@
+# Ignore environment files
+*.env
+
+# Ignore text, PDF, and Word files
+*.txt
+*.pdf
+*.doc
+*.docx
+
+chat_history.json
