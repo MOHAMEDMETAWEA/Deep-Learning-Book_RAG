@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import json
+import os
 from config import API_URL
 
 # --- CONFIG ---
