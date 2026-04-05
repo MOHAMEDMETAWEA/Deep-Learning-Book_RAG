@@ -1,10 +1,10 @@
 import streamlit as st
 import requests
 import json
-import os
+from config import API_URL
 
 # --- CONFIG ---
-API_URL = "http://127.0.0.1:8000"
+# Default fallback if not set in config; however, config.API_URL should be the primary source.
 HISTORY_FILE = "chat_history.json"
 
 st.set_page_config(
