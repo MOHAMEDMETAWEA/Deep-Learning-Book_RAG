@@ -144,7 +144,13 @@ Manually trigger document ingestion (PDF or Text).
 
 ## 📅 Changelog
 
-### **v2.2 (LATEST)**
+### **v2.3 (LATEST)**
+- ✅ **Fixed:** Resolved `NameError: os is not defined` in `frontend.py` during history loading.
+- ✅ **Fixed:** Corrected **Chapter Boundary Detection** in `chunking.py` to support single-line headers (e.g., Chapter 6). This prevents chapters from being skipped or lumped together.
+- ✅ **Improved:** Added `nn` as a synonym for "neural network" in `query_expansion.py` to handle short queries.
+- ⚠️ **NOTE:** If you previously had missing chapters (like Chapter 6 or 7) in the sidebar filter, you **must re-ingest the book** to apply the new boundary detection logic.
+
+### **v2.2**
 - ✨ **New:** Integrated **Chapter Filtering** system for precise context scoping.
 - ✨ **New:** Added **Persistence Layer** (`chat_history.json`) for session recovery.
 - ✅ **Fixed:** Resolved `UndefinedColumn` issues during initial DB migration.

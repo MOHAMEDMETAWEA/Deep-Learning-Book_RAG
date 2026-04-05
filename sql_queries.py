@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS rag_cv_chunks (
     section     TEXT,
     chunk_index INT NOT NULL,
     content     TEXT,
+    page_start  INT,
+    page_end    INT,
     embedding   VECTOR({dim}),
     UNIQUE(doc_name, chunk_index)
 );
@@ -61,13 +63,15 @@ CREATE INDEX IF NOT EXISTS rag_cv_chunks_content_tsv_idx
 
 INSERT_CHUNK_SQL = """
 INSERT INTO rag_cv_chunks
-    (doc_name, chapter, section, chunk_index, content, embedding)
-VALUES (%s, %s, %s, %s, %s, %s)
+    (doc_name, chapter, section, chunk_index, content, page_start, page_end, embedding)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 ON CONFLICT (doc_name, chunk_index)
 DO UPDATE SET
     chapter = EXCLUDED.chapter,
     section = EXCLUDED.section,
     content = EXCLUDED.content,
+    page_start = EXCLUDED.page_start,
+    page_end = EXCLUDED.page_end,
     embedding = EXCLUDED.embedding;
 """
 
@@ -105,10 +109,15 @@ SELECT
     0.7 * (1 - (embedding <=> %s::vector))
     + 0.3 * LEAST(ts_rank(to_tsvector('english', content),
                             plainto_tsquery('english', %s)), 1)
-    AS hybrid_score
+    AS hybrid_score,
+    page_start,
+    page_end
 FROM  rag_cv_chunks
 WHERE doc_name = %s
   AND (COALESCE(%s::TEXT[], '{}') = '{}' OR chapter = ANY(%s::TEXT[]))
+  AND (%s::INT IS NULL OR page_start >= %s::INT)
+  AND (%s::INT IS NULL OR page_end <= %s::INT)
+  AND (%s::TEXT IS NULL OR section ILIKE '%%' || %s::TEXT || '%%')
 ORDER BY hybrid_score DESC
 LIMIT %s
 """

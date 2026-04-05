@@ -53,6 +53,9 @@ from query_expansion import expand_query
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=1, description="User question")
     filter_chapters: Optional[list] = None
+    min_page: Optional[int] = None
+    max_page: Optional[int] = None
+    filter_section: Optional[str] = None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -100,20 +103,23 @@ QUESTION:
 
 
 def _normalize_row(row: tuple) -> dict:
-    """Convert a 6-tuple from rerank_results into a clean dict."""
+    """Convert a row from hybrid_retrieve_topk into a clean dict."""
     chapter    = row[0] if len(row) > 0 else ""
     section    = row[1] if len(row) > 1 else ""
     chunk_idx  = row[2] if len(row) > 2 else 0
     content    = row[3] if len(row) > 3 else ""
-    base_score = float(row[4]) if len(row) > 4 and row[4] is not None else 0.0
-    final_score = float(row[5]) if len(row) > 5 and row[5] is not None else base_score
+    final_score = float(row[4]) if len(row) > 4 and row[4] is not None else 0.0
+    page_start  = row[5] if len(row) > 5 else None
+    page_end    = row[6] if len(row) > 6 else None
+    
     return {
         "chapter":           chapter or "",
         "section":           section or "",
         "chunk_index":       chunk_idx,
         "content":           content or "",
-        "base_similarity":   base_score,
         "final_score":       final_score,
+        "page_start":        page_start,
+        "page_end":          page_end,
     }
 
 
@@ -183,7 +189,10 @@ def ask_question(payload: AskRequest) -> dict:
         # 3. Hybrid Retrieval (Task 5) + Filtering
         raw_results = hybrid_retrieve_topk(
             PG_CONN_STR, DOC_NAME, qvec, search_query, TOP_K_RETRIEVE,
-            filter_chapters=payload.filter_chapters
+            filter_chapters=payload.filter_chapters,
+            min_page=payload.min_page,
+            max_page=payload.max_page,
+            filter_section=payload.filter_section
         )
 
         # 4. Rerank (Task 6)

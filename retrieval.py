@@ -36,18 +36,28 @@ def hybrid_retrieve_topk(
     query_text: str,
     k: int,
     filter_chapters: list = None,
+    min_page: int = None,
+    max_page: int = None,
+    filter_section: str = None,
 ) -> list:
     """
     Hybrid search: 70 % vector similarity + 30 % PostgreSQL full-text rank.
-    Includes optional chapter filtering.
+    Includes optional chapter, page-range, and section/headline filtering.
     """
     with psycopg.connect(conn_str) as conn:
         register_vector(conn)
         with conn.cursor() as cur:
-            # Query expects: (vec, text, doc_name, filter_arr, filter_arr, limit)
+            # Query expects: (vec, text, doc_name, chap_arr, chap_arr, min_p, min_p, max_p, max_p, sec, sec, limit)
             cur.execute(
                 HYBRID_SEARCH_SQL,
-                (query_vec, query_text, doc_name, filter_chapters, filter_chapters, k),
+                (
+                    query_vec, query_text, doc_name, 
+                    filter_chapters, filter_chapters,
+                    min_page, min_page,
+                    max_page, max_page,
+                    filter_section, filter_section,
+                    k
+                ),
             )
             rows = cur.fetchall()
     return rows

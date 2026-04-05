@@ -38,7 +38,7 @@ def init_db(conn_str: str, dim: int):
 
     Also add missing columns for existing older schema versions.
     """
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
 
     with psycopg.connect(conn_str) as conn:
         with conn.cursor() as cur:
@@ -69,6 +69,8 @@ def init_db(conn_str: str, dim: int):
             cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS section TEXT;")
             cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS chunk_index INT;")
             cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS content TEXT;")
+            cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS page_start INT;")
+            cur.execute("ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS page_end INT;")
             cur.execute(
                 "ALTER TABLE rag_cv_chunks ADD COLUMN IF NOT EXISTS"
                 f" embedding VECTOR({dim});"
@@ -114,6 +116,8 @@ def upsert_chunks(conn_str: str, doc_name: str, chunks: list, vectors):
                         chunk.get("section", ""),
                         i,
                         chunk.get("content", ""),
+                        chunk.get("page_start"),
+                        chunk.get("page_end"),
                         vec,
                     ),
                 )

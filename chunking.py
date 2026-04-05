@@ -134,7 +134,7 @@ def clean_text(raw: str) -> Tuple[str, Dict[int, int]]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 # fitz extracts "CHAPTER 2." and "LINEAR ALGEBRA" on SEPARATE lines
-_CHAP_NUM_LINE  = re.compile(r"^CHAPTER\s+(\d+)\.$")          # "CHAPTER 2."
+_CHAP_NUM_LINE  = re.compile(r"^CHAPTER\s+(\d+)\.(?:\s+(.*))?$", re.IGNORECASE)          # "CHAPTER 2." or "CHAPTER 6. DEEP..."
 # Standalone section number only:  "2.6"  or  "10.11"
 _SEC_NUM_ALONE  = re.compile(r"^(\d{1,2}(?:\.\d{1,2}){1,2})$")
 
@@ -202,20 +202,28 @@ def split_sections(text: str) -> List[Dict]:
         stripped = line_text.strip()
 
         m_chap = _CHAP_NUM_LINE.match(stripped)
-        if m_chap and i + 1 < len(line_iter):
-            next_title = line_iter[i + 1].group(1).strip()
-            chap_key = f"CHAPTER {m_chap.group(1)}.{next_title}"
+        if m_chap:
+            chapter_num = m_chap.group(1)
+            title = (m_chap.group(2) or "").strip()
+            lines_consumed = 1
+
+            # If title isn't on this line, look ahead to the next line
+            if not title and i + 1 < len(line_iter):
+                title = line_iter[i + 1].group(1).strip()
+                lines_consumed = 2
+
+            chap_key = f"CHAPTER {chapter_num}. {title}"
 
             if chap_key not in seen_chap:
                 seen_chap.add(chap_key)
                 flush()
-                cur_chapter = f"chapter_{m_chap.group(1)}"
+                cur_chapter = f"chapter_{chapter_num}"
                 cur_section = "intro"
                 in_chapter = True
-                i += 2
+                i += lines_consumed
                 continue
             else:
-                i += 2
+                i += lines_consumed
                 continue
 
         m_sec = _SEC_NUM_ALONE.match(stripped)

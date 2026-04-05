@@ -11,6 +11,7 @@ SYNONYMS = {
     "adam": "adaptive moment estimation",
     "lstm": "long short-term memory",
     "optimizer": "optimization algorithm",
+    "nn": "neural network",
 }
 
 
