@@ -70,18 +70,20 @@ with st.sidebar:
     st.divider()
     st.subheader("🔍 Advanced Filtering")
     
-    # Fetch chapters loader
+    # Fetch chapters
     if not st.session_state.chapters:
         try:
-            r = requests.get(f"{api_base}/chapters", timeout=5)
+            r = requests.get(f"{api_base}/chapters", timeout=10)
             if r.status_code == 200:
                 st.session_state.chapters = r.json().get("chapters", [])
                 if not st.session_state.chapters:
                     st.warning("⚠️ No chapters found for this document in the database.")
             else:
                 st.error(f"❌ Failed to load chapters: API returned {r.status_code}")
+        except requests.exceptions.ConnectionError:
+            st.error("❌ Could not connect to the Backend API. Please ensure the backend is running (e.g. via run_system.bat) and retry.")
         except Exception as e:
-            st.error(f"❌ Could not connect to API for chapters: {e}")
+            st.error(f"❌ Could not connect to API for chapters. Error details: {e}")
 
     selected_chapters = st.multiselect(
         "Filter by Chapters",
@@ -220,8 +222,10 @@ if prompt := st.chat_input("What is backpropagation?"):
                 error_msg = f"Error {response.status_code}: {response.text}"
                 message_placeholder.error(error_msg)
 
+        except requests.exceptions.ConnectionError:
+            message_placeholder.error("❌ Failed to connect to the Backend API. Ensure the backend server is running and retry.")
         except Exception as e:
-            message_placeholder.error(f"Failed to connect to API: {e}")
+            message_placeholder.error(f"❌ Failed to connect to API: {e}")
 
 # --- FOOTER ---
 st.divider()
