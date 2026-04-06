@@ -2,6 +2,11 @@ import streamlit as st
 import requests
 import json
 import os
+
+# Bypass system proxies for localhost requests (fixes WinError 10061 in enterprise networks)
+os.environ["NO_PROXY"] = "localhost,127.0.0.1"
+os.environ["no_proxy"] = "localhost,127.0.0.1"
+
 from config import API_URL
 
 # --- CONFIG ---

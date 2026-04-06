@@ -60,7 +60,7 @@ HF_MODEL_NAME = os.getenv("HF_MODEL_NAME", "Qwen/Qwen3-Coder-Next:novita")
 # ── API Endpoint ──────────────────────────────────────────────────────────────
 # When deploying to Streamlit Cloud, the backend must be accessible at this URL.
 # 127.0.0.1:8000 only works for local execution.
-API_URL = os.getenv("ST_API_URL", "http://127.0.0.1:8000")
+API_URL = os.getenv("ST_API_URL", "http://localhost:8000")
 
 # Legacy alias — some cells use `api_key` directly
 api_key = os.getenv("HF_API_KEY", "your-hf-token-here")
